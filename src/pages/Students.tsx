@@ -3,6 +3,8 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Upload, Search, Trash2, UserPlus, Users } from "lucide-react";
@@ -28,6 +30,17 @@ export default function Students() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [newStudent, setNewStudent] = useState({
+    usn: "",
+    id_num: "",
+    name: "",
+    branch: "",
+    email: "",
+    mobile_num: "",
+    academic_year: "2024-25",
+    photo: "",
+  });
 
   useEffect(() => {
     fetchStudents();
@@ -122,6 +135,37 @@ export default function Students() {
     });
   };
 
+  const handleAddStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    try {
+      const { error } = await supabase.from("students").insert([{
+        ...newStudent,
+        uploaded_by: user.id,
+      }]);
+
+      if (error) throw error;
+
+      toast.success("Student added successfully!");
+      setAddDialogOpen(false);
+      setNewStudent({
+        usn: "",
+        id_num: "",
+        name: "",
+        branch: "",
+        email: "",
+        mobile_num: "",
+        academic_year: "2024-25",
+        photo: "",
+      });
+      fetchStudents();
+    } catch (error: any) {
+      console.error("Error adding student:", error);
+      toast.error("Failed to add student: " + error.message);
+    }
+  };
+
   const handleDelete = async (studentId: string) => {
     if (!confirm("Are you sure you want to delete this student?")) return;
 
@@ -170,10 +214,106 @@ export default function Students() {
                 />
               </label>
             </Button>
-            <Button>
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add Student
-            </Button>
+            <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Add Student
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Add New Student</DialogTitle>
+                  <DialogDescription>
+                    Add a student manually to your database
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleAddStudent} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="usn">USN *</Label>
+                      <Input
+                        id="usn"
+                        placeholder="1BM22CS001"
+                        value={newStudent.usn}
+                        onChange={(e) => setNewStudent({ ...newStudent, usn: e.target.value.toUpperCase() })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="id_num">ID Number</Label>
+                      <Input
+                        id="id_num"
+                        placeholder="Barcode ID"
+                        value={newStudent.id_num}
+                        onChange={(e) => setNewStudent({ ...newStudent, id_num: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Name *</Label>
+                    <Input
+                      id="name"
+                      placeholder="Student Name"
+                      value={newStudent.name}
+                      onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="branch">Branch</Label>
+                      <Input
+                        id="branch"
+                        placeholder="CSE, ECE, etc."
+                        value={newStudent.branch}
+                        onChange={(e) => setNewStudent({ ...newStudent, branch: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="academic_year">Academic Year</Label>
+                      <Input
+                        id="academic_year"
+                        placeholder="2024-25"
+                        value={newStudent.academic_year}
+                        onChange={(e) => setNewStudent({ ...newStudent, academic_year: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="student@bmsit.in"
+                      value={newStudent.email}
+                      onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="mobile">Mobile Number</Label>
+                    <Input
+                      id="mobile"
+                      placeholder="+91 9876543210"
+                      value={newStudent.mobile_num}
+                      onChange={(e) => setNewStudent({ ...newStudent, mobile_num: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="photo">Photo URL (optional)</Label>
+                    <Input
+                      id="photo"
+                      placeholder="https://..."
+                      value={newStudent.photo}
+                      onChange={(e) => setNewStudent({ ...newStudent, photo: e.target.value })}
+                    />
+                  </div>
+                  <Button type="submit" className="w-full">
+                    Add Student
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 

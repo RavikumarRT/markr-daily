@@ -31,17 +31,42 @@ export default function Sessions() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [availableYears, setAvailableYears] = useState<string[]>([]);
   
   const [newSession, setNewSession] = useState({
     session_name: "",
     department: "",
-    academic_year: "2024-25",
+    academic_year: "",
     session_type: "Class",
   });
 
   useEffect(() => {
     fetchSessions();
+    fetchAvailableYears();
   }, [user]);
+
+  const fetchAvailableYears = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("students")
+        .select("academic_year")
+        .eq("uploaded_by", user.id);
+
+      if (error) throw error;
+
+      const uniqueYears = [...new Set(data?.map(s => s.academic_year) || [])];
+      setAvailableYears(uniqueYears.sort().reverse());
+      
+      // Set default year if available
+      if (uniqueYears.length > 0 && !newSession.academic_year) {
+        setNewSession(prev => ({ ...prev, academic_year: uniqueYears[0] }));
+      }
+    } catch (error) {
+      console.error("Error fetching years:", error);
+    }
+  };
 
   const fetchSessions = async () => {
     if (!user) return;
@@ -210,13 +235,28 @@ export default function Sessions() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="academic-year">Academic Year</Label>
-                  <Input
-                    id="academic-year"
-                    placeholder="e.g., 2024-25"
+                  <Select
                     value={newSession.academic_year}
-                    onChange={(e) => setNewSession({ ...newSession, academic_year: e.target.value })}
-                    required
-                  />
+                    onValueChange={(value) => setNewSession({ ...newSession, academic_year: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableYears.length > 0 ? (
+                        availableYears.map((year) => (
+                          <SelectItem key={year} value={year}>
+                            {year}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="2024-25">2024-25 (No students uploaded yet)</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Only students from this year will be included
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="session-type">Session Type</Label>

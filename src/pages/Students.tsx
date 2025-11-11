@@ -89,18 +89,26 @@ export default function Students() {
   };
 
   const parseDateDDMMYYYY = (dateStr: string): string | null => {
-    if (!dateStr) return null;
+    if (!dateStr || dateStr.trim() === '') return null;
     
-    // Handle DD-MM-YYYY format (17-10-2004)
-    const parts = dateStr.split('-');
-    if (parts.length === 3) {
+    const trimmed = dateStr.trim();
+    
+    // Handle DD-MM-YYYY format (17-10-2004 or 28-05-2003)
+    const parts = trimmed.split('-');
+    if (parts.length === 3 && parts[0].length <= 2) {
       const day = parts[0].padStart(2, '0');
       const month = parts[1].padStart(2, '0');
       const year = parts[2];
       // Return in YYYY-MM-DD format for PostgreSQL
       return `${year}-${month}-${day}`;
     }
-    return dateStr; // Return as-is if format doesn't match
+    
+    // If already in YYYY-MM-DD format, return as-is
+    if (parts.length === 3 && parts[0].length === 4) {
+      return trimmed;
+    }
+    
+    return null;
   };
 
   const handleCSVUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {

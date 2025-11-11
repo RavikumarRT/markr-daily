@@ -88,6 +88,21 @@ export default function Students() {
     setFilteredStudents(filtered);
   };
 
+  const parseDateDDMMYYYY = (dateStr: string): string | null => {
+    if (!dateStr) return null;
+    
+    // Handle DD-MM-YYYY format (17-10-2004)
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      const year = parts[2];
+      // Return in YYYY-MM-DD format for PostgreSQL
+      return `${year}-${month}-${day}`;
+    }
+    return dateStr; // Return as-is if format doesn't match
+  };
+
   const handleCSVUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
@@ -105,7 +120,7 @@ export default function Students() {
               id_num: row.IDNum || row.USN,
               name: row.Name,
               branch: row.Branch || "",
-              dob: row.DOB || null,
+              dob: parseDateDDMMYYYY(row.DOB),
               gender: row.Gender || null,
               mobile_num: row.MobileNum || "",
               email: row.Email || "",

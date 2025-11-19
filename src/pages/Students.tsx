@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Upload, Search, Trash2, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 import Papa from "papaparse";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Student {
   student_id: string;
@@ -18,6 +19,7 @@ interface Student {
   name: string;
   branch: string;
   academic_year: string;
+  batch_year: string;
   email: string;
   mobile_num: string;
   photo: string;
@@ -29,6 +31,8 @@ export default function Students() {
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedBatch, setSelectedBatch] = useState<string>("all");
+  const [availableBatches, setAvailableBatches] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newStudent, setNewStudent] = useState({
@@ -39,6 +43,7 @@ export default function Students() {
     email: "",
     mobile_num: "",
     academic_year: "2024-25",
+    batch_year: "2022",
     photo: "",
   });
 
@@ -48,7 +53,7 @@ export default function Students() {
 
   useEffect(() => {
     filterStudents();
-  }, [searchQuery, students]);
+  }, [searchQuery, selectedBatch, students]);
 
   const fetchStudents = async () => {
     if (!user) return;
@@ -63,6 +68,10 @@ export default function Students() {
       if (error) throw error;
       setStudents(data || []);
       setFilteredStudents(data || []);
+      
+      // Extract unique batch years
+      const batches = [...new Set(data?.map(s => s.batch_year).filter(Boolean) || [])].sort().reverse();
+      setAvailableBatches(batches);
     } catch (error) {
       console.error("Error fetching students:", error);
       toast.error("Failed to load students");
@@ -72,19 +81,26 @@ export default function Students() {
   };
 
   const filterStudents = () => {
-    if (!searchQuery.trim()) {
-      setFilteredStudents(students);
-      return;
+    let filtered = students;
+    
+    // Filter by batch
+    if (selectedBatch !== "all") {
+      filtered = filtered.filter(s => s.batch_year === selectedBatch);
     }
-
-    const query = searchQuery.toLowerCase();
-    const filtered = students.filter(
-      (s) =>
-        s.name.toLowerCase().includes(query) ||
-        s.usn.toLowerCase().includes(query) ||
-        s.branch.toLowerCase().includes(query) ||
-        s.email.toLowerCase().includes(query)
-    );
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (s) =>
+          s.name.toLowerCase().includes(query) ||
+          s.usn.toLowerCase().includes(query) ||
+          s.branch.toLowerCase().includes(query) ||
+          s.batch_year?.toLowerCase().includes(query) ||
+          s.email.toLowerCase().includes(query)
+      );
+    }
+    
     setFilteredStudents(filtered);
   };
 
@@ -134,6 +150,7 @@ export default function Students() {
               email: row.Email || "",
               photo: row.Photo || "",
               academic_year: row.AcademicYear || "2024-25",
+              batch_year: row.BatchYear || "2022",
               uploaded_by: user.id,
             }));
 
@@ -180,6 +197,7 @@ export default function Students() {
         email: "",
         mobile_num: "",
         academic_year: "2024-25",
+        batch_year: "2022",
         photo: "",
       });
       fetchStudents();
@@ -202,6 +220,29 @@ export default function Students() {
     } catch (error) {
       console.error("Error deleting student:", error);
       toast.error("Failed to delete student");
+    }
+  };
+
+  const handleDeleteBatch = async (batchYear: string) => {
+    const studentsInBatch = students.filter(s => s.batch_year === batchYear).length;
+    
+    if (!confirm(`Are you sure you want to delete all ${studentsInBatch} students from batch ${batchYear}? This action cannot be undone.`)) return;
+
+    try {
+      const { error } = await supabase
+        .from("students")
+        .delete()
+        .eq("uploaded_by", user?.id)
+        .eq("batch_year", batchYear);
+
+      if (error) throw error;
+
+      toast.success(`Successfully deleted ${studentsInBatch} students from batch ${batchYear}!`);
+      setSelectedBatch("all");
+      fetchStudents();
+    } catch (error: any) {
+      console.error("Error deleting batch:", error);
+      toast.error("Failed to delete batch: " + error.message);
     }
   };
 
@@ -294,14 +335,24 @@ export default function Students() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="academic_year">Academic Year</Label>
+                      <Label htmlFor="batch_year">Batch Year *</Label>
                       <Input
-                        id="academic_year"
-                        placeholder="2024-25"
-                        value={newStudent.academic_year}
-                        onChange={(e) => setNewStudent({ ...newStudent, academic_year: e.target.value })}
+                        id="batch_year"
+                        placeholder="2022"
+                        value={newStudent.batch_year}
+                        onChange={(e) => setNewStudent({ ...newStudent, batch_year: e.target.value })}
+                        required
                       />
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="academic_year">Academic Year</Label>
+                    <Input
+                      id="academic_year"
+                      placeholder="2024-25"
+                      value={newStudent.academic_year}
+                      onChange={(e) => setNewStudent({ ...newStudent, academic_year: e.target.value })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
@@ -342,8 +393,8 @@ export default function Students() {
 
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Search by name, USN, branch, or email..."
@@ -352,6 +403,27 @@ export default function Students() {
                   className="pl-10"
                 />
               </div>
+              <Select value={selectedBatch} onValueChange={setSelectedBatch}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by batch" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Batches</SelectItem>
+                  {availableBatches.map(batch => (
+                    <SelectItem key={batch} value={batch}>Batch {batch}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedBatch !== "all" && (
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => handleDeleteBatch(selectedBatch)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Batch {selectedBatch}
+                </Button>
+              )}
               <div className="text-sm text-muted-foreground">
                 {filteredStudents.length} of {students.length} students
               </div>
@@ -377,6 +449,7 @@ export default function Students() {
                       <th className="text-left py-3 px-4 font-medium text-sm">USN</th>
                       <th className="text-left py-3 px-4 font-medium text-sm">Name</th>
                       <th className="text-left py-3 px-4 font-medium text-sm">Branch</th>
+                      <th className="text-left py-3 px-4 font-medium text-sm">Batch</th>
                       <th className="text-left py-3 px-4 font-medium text-sm">Year</th>
                       <th className="text-left py-3 px-4 font-medium text-sm">Contact</th>
                       <th className="text-right py-3 px-4 font-medium text-sm">Actions</th>
@@ -401,6 +474,7 @@ export default function Students() {
                         <td className="py-3 px-4 text-sm font-mono">{student.usn}</td>
                         <td className="py-3 px-4 text-sm font-medium">{student.name}</td>
                         <td className="py-3 px-4 text-sm">{student.branch}</td>
+                        <td className="py-3 px-4 text-sm">{student.batch_year || "N/A"}</td>
                         <td className="py-3 px-4 text-sm">{student.academic_year}</td>
                         <td className="py-3 px-4 text-sm">
                           <div>{student.email}</div>

@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
 import Sessions from "./pages/Sessions";
 import Scanner from "./pages/Scanner";
+import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Scanner />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute>
+                  <Analytics />
                 </ProtectedRoute>
               }
             />

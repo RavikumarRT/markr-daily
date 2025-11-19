@@ -32,17 +32,20 @@ export default function Sessions() {
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [availableYears, setAvailableYears] = useState<string[]>([]);
+  const [availableBatches, setAvailableBatches] = useState<string[]>([]);
   
   const [newSession, setNewSession] = useState({
     session_name: "",
     department: "",
     academic_year: "",
+    batch_year: "",
     session_type: "Class",
   });
 
   useEffect(() => {
     fetchSessions();
     fetchAvailableYears();
+    fetchAvailableBatches();
   }, [user]);
 
   const fetchAvailableYears = async () => {
@@ -65,6 +68,29 @@ export default function Sessions() {
       }
     } catch (error) {
       console.error("Error fetching years:", error);
+    }
+  };
+
+  const fetchAvailableBatches = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("students")
+        .select("batch_year")
+        .eq("uploaded_by", user.id);
+
+      if (error) throw error;
+
+      const uniqueBatches = [...new Set(data?.map(s => s.batch_year).filter(Boolean) || [])].sort().reverse();
+      setAvailableBatches(uniqueBatches);
+      
+      // Set default batch if available
+      if (uniqueBatches.length > 0 && !newSession.batch_year) {
+        setNewSession(prev => ({ ...prev, batch_year: uniqueBatches[0] }));
+      }
+    } catch (error) {
+      console.error("Error fetching batches:", error);
     }
   };
 
@@ -93,6 +119,14 @@ export default function Sessions() {
     if (!user) return;
 
     try {
+      // Count students for this batch and academic year
+      const { count: totalStudents } = await supabase
+        .from("students")
+        .select("*", { count: "exact", head: true })
+        .eq("uploaded_by", user.id)
+        .eq("academic_year", newSession.academic_year)
+        .eq("batch_year", newSession.batch_year);
+
       const { data, error } = await supabase
         .from("attendance_sessions")
         .insert([{
@@ -102,6 +136,7 @@ export default function Sessions() {
           session_type: newSession.session_type as any,
           started_by: user.id,
           status: "active" as any,
+          total_students: totalStudents || 0,
         }])
         .select()
         .single();
@@ -114,12 +149,13 @@ export default function Sessions() {
         session_name: "",
         department: "",
         academic_year: "2024-25",
+        batch_year: "",
         session_type: "Class",
       });
       fetchSessions();
       
-      // Navigate to scanner with new session
-      navigate(`/scanner?sessionId=${data.session_id}`);
+      // Navigate to scanner with new session and batch
+      navigate(`/scanner?sessionId=${data.session_id}&batchYear=${newSession.batch_year}`);
     } catch (error: any) {
       console.error("Error creating session:", error);
       toast.error("Failed to create session: " + error.message);
@@ -256,6 +292,31 @@ export default function Sessions() {
                   </Select>
                   <p className="text-xs text-muted-foreground">
                     Only students from this year will be included
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="batch-year">Batch Year</Label>
+                  <Select
+                    value={newSession.batch_year}
+                    onValueChange={(value) => setNewSession({ ...newSession, batch_year: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select batch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableBatches.length > 0 ? (
+                        availableBatches.map((batch) => (
+                          <SelectItem key={batch} value={batch}>
+                            Batch {batch}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="2022">Batch 2022 (No batches available)</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Only students from this batch will be included
                   </p>
                 </div>
                 <div className="space-y-2">

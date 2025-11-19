@@ -186,6 +186,7 @@ export type Database = {
       students: {
         Row: {
           academic_year: string
+          batch_year: string | null
           branch: string | null
           dob: string | null
           email: string | null
@@ -201,6 +202,7 @@ export type Database = {
         }
         Insert: {
           academic_year: string
+          batch_year?: string | null
           branch?: string | null
           dob?: string | null
           email?: string | null
@@ -216,6 +218,7 @@ export type Database = {
         }
         Update: {
           academic_year?: string
+          batch_year?: string | null
           branch?: string | null
           dob?: string | null
           email?: string | null

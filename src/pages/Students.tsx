@@ -29,6 +29,7 @@ export default function Students() {
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedBatch, setSelectedBatch] = useState<string>("all");
   const [uploading, setUploading] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newStudent, setNewStudent] = useState({
@@ -48,7 +49,7 @@ export default function Students() {
 
   useEffect(() => {
     filterStudents();
-  }, [searchQuery, students]);
+  }, [searchQuery, selectedBatch, students]);
 
   const fetchStudents = async () => {
     if (!user) return;

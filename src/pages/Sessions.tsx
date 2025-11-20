@@ -8,9 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Calendar, Plus, Play, Pause, Square, Trash2, Copy } from "lucide-react";
+import { Calendar, Plus, Play, Pause, Square, Trash2, Copy, Download } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import * as XLSX from 'xlsx';
 
 interface Session {
   session_id: string;
@@ -111,6 +112,72 @@ export default function Sessions() {
       toast.error("Failed to load sessions");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadReport = async (session: Session) => {
+    try {
+      // Fetch all students for this session's academic year and batch
+      const { data: students, error: studentsError } = await supabase
+        .from("students")
+        .select("*")
+        .eq("uploaded_by", user?.id)
+        .eq("academic_year", session.academic_year);
+
+      if (studentsError) throw studentsError;
+
+      // Fetch attendance records for this session
+      const { data: attendanceRecords, error: attendanceError } = await supabase
+        .from("attendance_records")
+        .select("*")
+        .eq("session_id", session.session_id);
+
+      if (attendanceError) throw attendanceError;
+
+      // Create a map of USN to attendance record
+      const attendanceMap = new Map(
+        attendanceRecords?.map(record => [record.student_usn, record]) || []
+      );
+
+      // Build the report data
+      const reportData = students?.map(student => {
+        const attendance = attendanceMap.get(student.usn);
+        return {
+          'USN': student.usn,
+          'Name': student.name,
+          'Branch': student.branch || 'N/A',
+          'Batch Year': student.batch_year || 'N/A',
+          'Status': attendance ? 'Present' : 'Absent',
+          'Scan Method': attendance?.scan_method || 'N/A',
+          'Timestamp': attendance?.timestamp 
+            ? new Date(attendance.timestamp).toLocaleString('en-IN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+              })
+            : 'N/A'
+        };
+      }) || [];
+
+      // Create worksheet and workbook
+      const worksheet = XLSX.utils.json_to_sheet(reportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance Report');
+
+      // Generate filename
+      const sessionDate = new Date(session.start_time).toLocaleDateString('en-IN').replace(/\//g, '-');
+      const filename = `${session.session_name}_${sessionDate}_Report.xlsx`;
+
+      // Download the file
+      XLSX.writeFile(workbook, filename);
+
+      toast.success(`Report downloaded successfully!`);
+    } catch (error: any) {
+      console.error("Error downloading report:", error);
+      toast.error("Failed to download report: " + error.message);
     }
   };
 
@@ -411,6 +478,13 @@ export default function Sessions() {
                           <Play className="h-4 w-4" />
                         </Button>
                       )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDownloadReport(session)}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"

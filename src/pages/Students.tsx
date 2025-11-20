@@ -35,6 +35,7 @@ export default function Students() {
   const [availableBatches, setAvailableBatches] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [csvBatchYear, setCsvBatchYear] = useState("2022");
   const [newStudent, setNewStudent] = useState({
     usn: "",
     id_num: "",
@@ -150,7 +151,7 @@ export default function Students() {
               email: row.Email || "",
               photo: row.Photo || "",
               academic_year: row.AcademicYear || "2024-25",
-              batch_year: row.BatchYear || "2022",
+              batch_year: row.BatchYear || csvBatchYear,
               uploaded_by: user.id,
             }));
 
@@ -265,19 +266,47 @@ export default function Students() {
             <p className="text-muted-foreground mt-2">Manage your student database</p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" asChild>
-              <label className="cursor-pointer">
-                <Upload className="mr-2 h-4 w-4" />
-                {uploading ? "Uploading..." : "Upload CSV"}
-                <input
-                  type="file"
-                  accept=".csv"
-                  className="hidden"
-                  onChange={handleCSVUpload}
-                  disabled={uploading}
-                />
-              </label>
-            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload CSV
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Upload Students from CSV</DialogTitle>
+                  <DialogDescription>
+                    Upload a CSV file to add multiple students at once
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="batch-year-csv">Batch Year for Upload</Label>
+                    <Input
+                      id="batch-year-csv"
+                      type="text"
+                      placeholder="e.g., 2022"
+                      value={csvBatchYear}
+                      onChange={(e) => setCsvBatchYear(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="csv-upload">Select CSV File</Label>
+                    <Input
+                      id="csv-upload"
+                      type="file"
+                      accept=".csv"
+                      onChange={handleCSVUpload}
+                      disabled={uploading}
+                      className="mt-1"
+                    />
+                  </div>
+                  {uploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
+                </div>
+              </DialogContent>
+            </Dialog>
             <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button>

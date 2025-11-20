@@ -58,7 +58,6 @@ export type Database = {
       }
       attendance_sessions: {
         Row: {
-          academic_year: string
           created_at: string | null
           department: string | null
           end_time: string | null
@@ -72,7 +71,6 @@ export type Database = {
           total_students: number | null
         }
         Insert: {
-          academic_year: string
           created_at?: string | null
           department?: string | null
           end_time?: string | null
@@ -86,7 +84,6 @@ export type Database = {
           total_students?: number | null
         }
         Update: {
-          academic_year?: string
           created_at?: string | null
           department?: string | null
           end_time?: string | null
@@ -185,7 +182,6 @@ export type Database = {
       }
       students: {
         Row: {
-          academic_year: string
           batch_year: string | null
           branch: string | null
           dob: string | null
@@ -201,7 +197,6 @@ export type Database = {
           usn: string
         }
         Insert: {
-          academic_year: string
           batch_year?: string | null
           branch?: string | null
           dob?: string | null
@@ -217,7 +212,6 @@ export type Database = {
           usn: string
         }
         Update: {
-          academic_year?: string
           batch_year?: string | null
           branch?: string | null
           dob?: string | null

@@ -10,7 +10,6 @@ interface SessionStats {
   session_id: string;
   session_name: string;
   session_type: string;
-  academic_year: string;
   start_time: string;
   end_time: string | null;
   present_count: number;
@@ -105,9 +104,7 @@ export default function Analytics() {
     }
   };
 
-  const filteredSessions = selectedBatch === "all" 
-    ? sessions 
-    : sessions.filter(s => s.academic_year === selectedBatch);
+  const filteredSessions = sessions;
 
   const overallStats = {
     totalSessions: sessions.length,

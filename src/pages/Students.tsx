@@ -18,7 +18,6 @@ interface Student {
   id_num: string;
   name: string;
   branch: string;
-  academic_year: string;
   batch_year: string;
   email: string;
   mobile_num: string;
@@ -43,7 +42,6 @@ export default function Students() {
     branch: "",
     email: "",
     mobile_num: "",
-    academic_year: "2024-25",
     batch_year: "2022",
     photo: "",
   });
@@ -150,7 +148,6 @@ export default function Students() {
               mobile_num: row.MobileNum || "",
               email: row.Email || "",
               photo: row.Photo || "",
-              academic_year: row.AcademicYear || "2024-25",
               batch_year: row.BatchYear || csvBatchYear,
               uploaded_by: user.id,
             }));
@@ -197,7 +194,6 @@ export default function Students() {
         branch: "",
         email: "",
         mobile_num: "",
-        academic_year: "2024-25",
         batch_year: "2022",
         photo: "",
       });
@@ -375,15 +371,6 @@ export default function Students() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="academic_year">Academic Year</Label>
-                    <Input
-                      id="academic_year"
-                      placeholder="2024-25"
-                      value={newStudent.academic_year}
-                      onChange={(e) => setNewStudent({ ...newStudent, academic_year: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
@@ -479,7 +466,6 @@ export default function Students() {
                       <th className="text-left py-3 px-4 font-medium text-sm">Name</th>
                       <th className="text-left py-3 px-4 font-medium text-sm">Branch</th>
                       <th className="text-left py-3 px-4 font-medium text-sm">Batch</th>
-                      <th className="text-left py-3 px-4 font-medium text-sm">Year</th>
                       <th className="text-left py-3 px-4 font-medium text-sm">Contact</th>
                       <th className="text-right py-3 px-4 font-medium text-sm">Actions</th>
                     </tr>
@@ -504,7 +490,6 @@ export default function Students() {
                         <td className="py-3 px-4 text-sm font-medium">{student.name}</td>
                         <td className="py-3 px-4 text-sm">{student.branch}</td>
                         <td className="py-3 px-4 text-sm">{student.batch_year || "N/A"}</td>
-                        <td className="py-3 px-4 text-sm">{student.academic_year}</td>
                         <td className="py-3 px-4 text-sm">
                           <div>{student.email}</div>
                           <div className="text-muted-foreground">{student.mobile_num}</div>

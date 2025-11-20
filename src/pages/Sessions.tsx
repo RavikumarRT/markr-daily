@@ -17,7 +17,6 @@ interface Session {
   session_id: string;
   session_name: string;
   department: string;
-  academic_year: string;
   session_type: string;
   start_time: string;
   end_time: string | null;
@@ -32,45 +31,19 @@ export default function Sessions() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [availableYears, setAvailableYears] = useState<string[]>([]);
   const [availableBatches, setAvailableBatches] = useState<string[]>([]);
   
   const [newSession, setNewSession] = useState({
     session_name: "",
     department: "",
-    academic_year: "",
     batch_year: "",
     session_type: "Class",
   });
 
   useEffect(() => {
     fetchSessions();
-    fetchAvailableYears();
     fetchAvailableBatches();
   }, [user]);
-
-  const fetchAvailableYears = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from("students")
-        .select("academic_year")
-        .eq("uploaded_by", user.id);
-
-      if (error) throw error;
-
-      const uniqueYears = [...new Set(data?.map(s => s.academic_year) || [])];
-      setAvailableYears(uniqueYears.sort().reverse());
-      
-      // Set default year if available
-      if (uniqueYears.length > 0 && !newSession.academic_year) {
-        setNewSession(prev => ({ ...prev, academic_year: uniqueYears[0] }));
-      }
-    } catch (error) {
-      console.error("Error fetching years:", error);
-    }
-  };
 
   const fetchAvailableBatches = async () => {
     if (!user) return;
@@ -121,8 +94,7 @@ export default function Sessions() {
       const { data: students, error: studentsError } = await supabase
         .from("students")
         .select("*")
-        .eq("uploaded_by", user?.id)
-        .eq("academic_year", session.academic_year);
+        .eq("uploaded_by", user?.id);
 
       if (studentsError) throw studentsError;
 
@@ -186,12 +158,11 @@ export default function Sessions() {
     if (!user) return;
 
     try {
-      // Count students for this batch and academic year
+      // Count students for this batch
       const { count: totalStudents } = await supabase
         .from("students")
         .select("*", { count: "exact", head: true })
         .eq("uploaded_by", user.id)
-        .eq("academic_year", newSession.academic_year)
         .eq("batch_year", newSession.batch_year);
 
       const { data, error } = await supabase
@@ -199,7 +170,6 @@ export default function Sessions() {
         .insert([{
           session_name: newSession.session_name,
           department: newSession.department,
-          academic_year: newSession.academic_year,
           session_type: newSession.session_type as any,
           started_by: user.id,
           status: "active" as any,
@@ -215,7 +185,6 @@ export default function Sessions() {
       setNewSession({
         session_name: "",
         department: "",
-        academic_year: "2024-25",
         batch_year: "",
         session_type: "Class",
       });
@@ -335,31 +304,6 @@ export default function Sessions() {
                     onChange={(e) => setNewSession({ ...newSession, department: e.target.value })}
                     required
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="academic-year">Academic Year</Label>
-                  <Select
-                    value={newSession.academic_year}
-                    onValueChange={(value) => setNewSession({ ...newSession, academic_year: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select year" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableYears.length > 0 ? (
-                        availableYears.map((year) => (
-                          <SelectItem key={year} value={year}>
-                            {year}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="2024-25">2024-25 (No students uploaded yet)</SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Only students from this year will be included
-                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="batch-year">Batch Year</Label>
@@ -500,10 +444,6 @@ export default function Sessions() {
                     <div>
                       <div className="text-muted-foreground">Department</div>
                       <div className="font-medium">{session.department}</div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">Academic Year</div>
-                      <div className="font-medium">{session.academic_year}</div>
                     </div>
                     <div>
                       <div className="text-muted-foreground">Attendance</div>

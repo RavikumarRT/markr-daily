@@ -175,8 +175,7 @@ export default function Scanner() {
       const { data, error } = await supabase
         .from("students")
         .select("student_id, usn, name, branch, email, photo, id_num")
-        .eq("uploaded_by", user?.id)
-        .eq("academic_year", sessionData.academic_year);
+        .eq("uploaded_by", user?.id);
 
       if (error) throw error;
       setAllStudents(data || []);

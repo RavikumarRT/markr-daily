@@ -17,6 +17,7 @@ interface Session {
   session_id: string;
   session_name: string;
   department: string;
+  batch_year: string;
   session_type: string;
   start_time: string;
   end_time: string | null;
@@ -90,11 +91,21 @@ export default function Sessions() {
 
   const handleDownloadReport = async (session: Session) => {
     try {
-      // Fetch all students for this session's academic year and batch
+      // Fetch session details to get batch_year
+      const { data: sessionDetails, error: sessionError } = await supabase
+        .from("attendance_sessions")
+        .select("batch_year")
+        .eq("session_id", session.session_id)
+        .single();
+
+      if (sessionError) throw sessionError;
+
+      // Fetch students for this session's batch
       const { data: students, error: studentsError } = await supabase
         .from("students")
         .select("*")
-        .eq("uploaded_by", user?.id);
+        .eq("uploaded_by", user?.id)
+        .eq("batch_year", sessionDetails.batch_year);
 
       if (studentsError) throw studentsError;
 
@@ -170,6 +181,7 @@ export default function Sessions() {
         .insert([{
           session_name: newSession.session_name,
           department: newSession.department,
+          batch_year: newSession.batch_year,
           session_type: newSession.session_type as any,
           started_by: user.id,
           status: "active" as any,

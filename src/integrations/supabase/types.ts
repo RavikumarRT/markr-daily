@@ -58,6 +58,7 @@ export type Database = {
       }
       attendance_sessions: {
         Row: {
+          batch_year: string | null
           created_at: string | null
           department: string | null
           end_time: string | null
@@ -71,6 +72,7 @@ export type Database = {
           total_students: number | null
         }
         Insert: {
+          batch_year?: string | null
           created_at?: string | null
           department?: string | null
           end_time?: string | null
@@ -84,6 +86,7 @@ export type Database = {
           total_students?: number | null
         }
         Update: {
+          batch_year?: string | null
           created_at?: string | null
           department?: string | null
           end_time?: string | null

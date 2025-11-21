@@ -166,7 +166,7 @@ export default function Scanner() {
     try {
       const { data: sessionData } = await supabase
         .from("attendance_sessions")
-        .select("academic_year")
+        .select("batch_year")
         .eq("session_id", sessionId)
         .single();
 
@@ -175,7 +175,8 @@ export default function Scanner() {
       const { data, error } = await supabase
         .from("students")
         .select("student_id, usn, name, branch, email, photo, id_num")
-        .eq("uploaded_by", user?.id);
+        .eq("uploaded_by", user?.id)
+        .eq("batch_year", sessionData.batch_year);
 
       if (error) throw error;
       setAllStudents(data || []);
@@ -381,7 +382,7 @@ export default function Scanner() {
               <div>
                 <h1 className="text-xl font-bold">{sessionName}</h1>
                 <p className="text-sm text-muted-foreground">
-                  {sessionData.department} • {sessionData.academic_year}
+                  {sessionData.department} • Batch {sessionData.batch_year}
                 </p>
               </div>
               {scanningIndicator && (
